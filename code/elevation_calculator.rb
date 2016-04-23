@@ -37,7 +37,7 @@ class ElevationCalculator
           csv << [
             row,
             col,
-            self.get_grayscale("../#{@planet[:name]}/#{@planet[:zoom]}/#{row}-#{col}.png")
+            self.get_grayscale("../images/#{@planet[:name]}/#{@planet[:zoom]}/#{row}-#{col}.png")
           ]
 
         end
@@ -49,15 +49,6 @@ class ElevationCalculator
     image_1 = Magick::Image.read(file_path).first
     image_1.channel_mean.map { |x| x / Magick::QuantumRange }.first
   end
-
-  # CSV.open("file.csv", "wb") do |csv|
-  #   csv << ["animal", "count", "price"]
-  #   csv << ["fox", "1", "$90.00"]
-  # end
-
-  # row
-  # col
-  # gray_value  
 
 end
 
