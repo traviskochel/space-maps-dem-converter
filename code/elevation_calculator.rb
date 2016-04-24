@@ -6,7 +6,7 @@ class ElevationCalculator
   require 'json'
 
   def initialize(planet)
-    @resolution = 2
+    @resolution = 10
     @planet_opts = {
       mars: {
         name: 'mars',
@@ -97,14 +97,14 @@ class ElevationCalculator
     image_1.channel_mean.map { |x| x / Magick::QuantumRange }.first
   end
 
-  def test
-    file_path = "../images/#{@planet[:name]}/#{@planet[:zoom]}/#{10}-#{30}.png"
-    image = Magick::Image.read(file_path).first
-    small_image = image.resize(2,2)
-    small_image.each_pixel do |pixel|
-      puts normalize_color(pixel.red)
-    end 
-  end
+  # def test
+  #   file_path = "../images/#{@planet[:name]}/#{@planet[:zoom]}/#{10}-#{30}.png"
+  #   image = Magick::Image.read(file_path).first
+  #   small_image = image.resize(2,2)
+  #   small_image.each_pixel do |pixel|
+  #     puts normalize_color(pixel.red)
+  #   end 
+  # end
 
 end
 
