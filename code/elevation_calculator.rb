@@ -30,23 +30,6 @@ class ElevationCalculator
     @planet = @planet_opts[planet]
   end
 
-  # def start
-  #   CSV.open("../data/#{@planet[:name]}-#{Time.now.to_i}.csv", "wb") do |csv|
-  #     csv << ['row', 'col', 'gray_value']
-
-  #     @planet[:max_rows].times do |row|
-  #       @planet[:max_cols].times do |col|
-  #         csv << [
-  #           row,
-  #           col,
-  #           self.get_grayscale("../images/#{@planet[:name]}/#{@planet[:zoom]}/#{row}-#{col}.png")
-  #         ]
-
-  #       end
-  #     end
-  #   end
-  # end
-
   def elevation_as_json
     tiles = []
     @planet[:max_rows].times do |row|
@@ -97,16 +80,80 @@ class ElevationCalculator
     image_1.channel_mean.map { |x| x / Magick::QuantumRange }.first
   end
 
-  # def test
-  #   file_path = "../images/#{@planet[:name]}/#{@planet[:zoom]}/#{10}-#{30}.png"
-  #   image = Magick::Image.read(file_path).first
-  #   small_image = image.resize(2,2)
-  #   small_image.each_pixel do |pixel|
-  #     puts normalize_color(pixel.red)
-  #   end 
-  # end
+  def get_image_tile(row, col)
+    file_path = "../images/#{@planet[:name]}/#{@planet[:zoom]}/#{row}-#{col}.png"
+    Magick::Image.read(file_path).first
+  end
+
+  ### machine_learning
+  def sum_array(array)
+    array.inject { |sum, x| sum + x }
+  end
+
+  def deviation(image, col, row, direction)
+    if direction == 'horizontal'
+      next_col = col + 1
+      next_row = row
+      last = next_col >= image.columns
+    else 
+      next_col = col
+      next_row = row + 1
+      last = next_row >= image.rows
+    end
+
+    if !last
+      p_0_color = image.pixel_color(col, row).red
+      p_1_color = image.pixel_color(next_col, next_row).red
+      deviation = (p_0_color - p_1_color).abs
+      return normalize_color(deviation)
+    end
+  end
+
+  def neighbor_deviation_values(image)
+    deviations = []
+    image = image.resize(@resolution, @resolution)
+    image.rows.times do |row|
+      image.columns.times do |col|
+        deviations.push(deviation(image, col, row, 'horizontal'))
+        deviations.push(deviation(image, col, row, 'vertical'))
+      end
+    end
+    return deviations.compact
+  end
+
+  def neighbor_deviations_tile(image)
+    deviations = neighbor_deviation_values(image)
+    avg_deviation = sum_array(deviations) / deviations.length
+
+    return {
+      avg: avg_deviation,
+      max: deviations.max,
+      min: deviations.min
+    }
+  end
+
+  def neighbor_deviations_map
+    deviations = []
+    @planet[:max_rows].times do |row|
+      @planet[:max_cols].times do |col|
+        image = get_image_tile(row,col)
+        deviations.push(neighbor_deviations_tile(image))
+      end
+    end
+    deviations
+  end
+
+  def vector_deviations
+    image = get_image_tile(10,30)
+
+  end
+
+  def sample
+    puts neighbor_deviations_map
+    # puts vector_deviations
+  end
 
 end
 
-ElevationCalculator.new(:mars).elevation_as_json
-# ElevationCalculator.new(:mars).test
+# ElevationCalculator.new(:mars).elevation_as_json
+ElevationCalculator.new(:mars).sample
