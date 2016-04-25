@@ -105,7 +105,7 @@ class ElevationCalculator
       p_0_color = image.pixel_color(col, row).red
       p_1_color = image.pixel_color(next_col, next_row).red
       deviation = (p_0_color - p_1_color).abs
-      return normalize_color(deviation)
+      normalize_color(deviation)
     end
   end
 
@@ -118,14 +118,16 @@ class ElevationCalculator
         deviations.push(deviation(image, col, row, 'vertical'))
       end
     end
-    return deviations.compact
+    deviations.compact
   end
 
-  def neighbor_deviations_tile(image)
+  def neighbor_deviations_tile(image, tile_col, tile_row)
     deviations = neighbor_deviation_values(image)
     avg_deviation = sum_array(deviations) / deviations.length
 
     return {
+      col: tile_col,
+      row: tile_row,
       avg: avg_deviation,
       max: deviations.max,
       min: deviations.min
@@ -137,15 +139,51 @@ class ElevationCalculator
     @planet[:max_rows].times do |row|
       @planet[:max_cols].times do |col|
         image = get_image_tile(row,col)
-        deviations.push(neighbor_deviations_tile(image))
+        deviations.push(neighbor_deviations_tile(image, col, row))
       end
     end
     deviations
   end
 
-  def vector_deviations
-    image = get_image_tile(10,30)
 
+  def vector_deviations_tile(image, tile_col, tile_row)
+    deviations = []
+    image = image.resize(@resolution, @resolution)
+    image.rows.times do |row|
+      image.columns.times do |col|
+        d_1 = deviation(image, col, row, 'horizontal')
+        d_2 = deviation(image, col + 1, row, 'horizontal' )
+        if d_1 and d_2
+          deviations.push((d_1 - d_2).abs)
+        end
+
+        d_3 = deviation(image, col, row, 'vertical')
+        d_4 = deviation(image, col, row+1, 'vertical' )
+        if d_3 and d_4
+          deviations.push((d_3 - d_4).abs)
+        end
+      end
+    end
+
+    avg_deviation = sum_array(deviations) / deviations.length
+    return {
+      col: tile_col,
+      row: tile_row,
+      avg: avg_deviation,
+      max: deviations.max,
+      min: deviations.min
+    }
+  end
+
+  def vector_deviations
+    deviations = []
+    @planet[:max_rows].times do |row|
+      @planet[:max_cols].times do |col|
+        image = get_image_tile(row,col)
+        deviations.push(vector_deviations_tile(image, col, row))
+      end
+    end
+    deviations
   end
 
   def sample
